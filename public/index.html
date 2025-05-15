@@ -1,0 +1,30 @@
+
+/* ==== public/index.html ==== */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <label for="name">Seu nome:</label>
+    <input type="text" id="name" placeholder="Digite seu nome" />
+    <button id="setName">Salvar Nome</button>
+
+    <h1>Seu tempo: <span id="timer">0.00</span> s</h1>
+    <button id="toggle">Pronto/Parar</button>
+    <button style="display:none" id="nextRound">Próxima Rodada</button>
+    <button style="display:none" id="newGame">Novo Jogo</button>
+
+    <h2 id="roundInfo">Rodada: 1 / 5</h2>
+    <p id="result"></p>
+    <div id="winnerInfo"></div>
+    <div id="scoreboard"></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
