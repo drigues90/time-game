@@ -22,6 +22,7 @@ function resetPlayerStatus() {
   for (const id in players) {
     players[id].time = 0;
     players[id].submitted = false;
+    players[id].ready = false;
   }
 }
 
@@ -31,9 +32,13 @@ function startNextRound() {
   io.emit('startRound', { currentRound });
 }
 
+function allPlayersReady() {
+  return Object.values(players).every(p => p.ready);
+}
+
 io.on('connection', (socket) => {
   console.log('Novo jogador conectado:', socket.id);
-  players[socket.id] = { time: 0, name: `Jogador ${socket.id.substring(0, 5)}`, submitted: false, victories: 0, totalTime: 300 };
+  players[socket.id] = { time: 0, name: `Jogador ${socket.id.substring(0, 5)}`, submitted: false, victories: 0, totalTime: 300, ready: false };
 
   io.emit('updateScoreboard', getScoreboard());
 
@@ -103,6 +108,15 @@ io.on('connection', (socket) => {
     }
     io.emit('updateScoreboard', getScoreboard());
     io.emit('startRound', { currentRound });
+  });
+
+  socket.on('playerReady', () => {
+    if (players[socket.id]) {
+      players[socket.id].ready = true;
+      if (allPlayersReady()) {
+        startNextRound();
+      }
+    }
   });
 
   socket.on('disconnect', () => {

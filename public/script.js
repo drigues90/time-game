@@ -29,21 +29,15 @@ setNameBtn.onclick = () => {
 };
 
 toggleBtn.onclick = () => {
-  if (submitted) return;
-
-  if (!running) {
-    startTime = Date.now();
-    running = true;
-    interval = setInterval(() => {
-      timer = (Date.now() - startTime) / 1000;
-      timerDisplay.textContent = timer.toFixed(2);
-    }, 10);
-  } else {
+  if (!running && !submitted) {
+    socket.emit('playerReady');
+    toggleBtn.disabled = true; // desativa botão até início da rodada
+  } else if (running && !submitted) {
     clearInterval(interval);
     running = false;
     submitted = true;
-    toggleBtn.disabled = true;
     socket.emit('submitTime', timer);
+    toggleBtn.disabled = true;
   }
 };
 
@@ -58,10 +52,15 @@ newGameBtn.onclick = () => {
 
 socket.on('startRound', ({ currentRound }) => {
   timer = 0;
-  running = false;
+  running = true;
   submitted = false;
+  startTime = Date.now();
+  interval = setInterval(() => {
+    timer = (Date.now() - startTime) / 1000;
+    timerDisplay.textContent = timer.toFixed(2);
+  }, 10);
+
   toggleBtn.disabled = false;
-  timerDisplay.textContent = '0.00';
   result.textContent = '';
   winnerInfo.textContent = '';
   roundInfo.textContent = `Rodada: ${currentRound} / 5`;
