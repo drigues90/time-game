@@ -95,12 +95,27 @@ socket.on('updateScoreboard', (players) => {
   updateScoreboard(players);
 });
 
-socket.on('gameOver', ({ players, fullResults  }) => {
+socket.on('gameOver', ({ players, fullResults, roundHistory   }) => {
   result.textContent = 'Jogo finalizado!';
   winnerInfo.textContent = '';
   roundInfo.textContent = 'Rodadas completas';
   updateScoreboard(players);
   showFinalStats(fullResults);
+  showFinalResults(roundHistory);
+});
+
+socket.on('gameReset', () => {
+  document.getElementById('finalResults').style.display = 'none';
+  result.textContent = '';
+  winnerInfo.textContent = '';
+  roundInfo.textContent = 'Rodada: 1 / 5';
+  timerDisplay.textContent = '0.00';
+  submitted = false;
+  running = false;
+  timer = 0;
+  startTime = 0;
+  toggleBtn.disabled = false;
+  newGameBtn.disabled = false;
 });
 
 function updateScoreboard(players) {
@@ -136,3 +151,33 @@ function showFinalStats(results) {
   }
   scoreboard.appendChild(container);
 }
+
+function showFinalResults(roundHistory) {
+  const container = document.getElementById('history');
+  const finalResults = document.getElementById('finalResults');
+  finalResults.style.display = 'block';
+  container.innerHTML = '';
+
+  roundHistory.forEach(({ round, results }) => {
+    const section = document.createElement('section');
+    section.classList.add('round-summary');
+    const title = document.createElement('h3');
+    title.textContent = `Rodada ${round}`;
+    section.appendChild(title);
+
+    const list = document.createElement('ul');
+    results.forEach(({ name, time, winner }) => {
+      const li = document.createElement('li');
+      li.textContent = `${name} - ${time}s`;
+      if (winner) li.classList.add('winner');
+      list.appendChild(li);
+    });
+
+    section.appendChild(list);
+    container.appendChild(section);
+  });
+
+  // const audio = document.getElementById('victorySound');
+  // if (audio) audio.play();
+}
+

@@ -1,4 +1,7 @@
 /* ==== server.js ==== */
+
+let roundHistory = []; // [{ round, results: [{ name, time, winner }] }]
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -75,6 +78,8 @@ io.on('connection', (socket) => {
 
   socket.on('submitTime', (elapsedTime) => {
     if (players[socket.id] && !players[socket.id].submitted && roundInProgress) {
+      
+
       players[socket.id].time = elapsedTime;
       players[socket.id].submitted = true;
       players[socket.id].totalTime = Math.max(0, players[socket.id].totalTime - elapsedTime);
@@ -93,6 +98,13 @@ io.on('connection', (socket) => {
         }
 
         if (winnerId && players[winnerId]) {
+          const roundResults = Object.entries(players).map(([id, p]) => ({
+            name: p.name,
+            time: p.time.toFixed(2),
+            winner: id === winnerId
+          }));
+    
+          roundHistory.push({ round: currentRound, results: roundResults });
           players[winnerId].victories += 1;
         }
 
@@ -110,7 +122,8 @@ io.on('connection', (socket) => {
         if (currentRound > maxRounds || Object.values(players).every(p => p.totalTime <= 0)) {
           io.emit('gameOver', {
             players: getScoreboard(),
-            fullResults: getFullResults()
+            fullResults: getFullResults(),
+            roundHistory
           });
         }
       }
@@ -151,6 +164,25 @@ io.on('connection', (socket) => {
     delete players[socket.id];
     io.emit('updateScoreboard', getScoreboard());
     console.log('Jogador saiu:', socket.id);
+  });
+
+  socket.on('resetGame', () => {
+    console.log('Novo jogo iniciado por', socket.id);
+  
+    // Zera os dados
+    for (const id in players) {
+      players[id].time = 0;
+      players[id].submitted = false;
+      players[id].victories = 0;
+      players[id].totalTime = 300;
+    }
+  
+    currentRound = 1;
+    roundHistory = [];
+    roundInProgress = false;
+  
+    io.emit('updateScoreboard', getScoreboard());
+    io.emit('gameReset');
   });
 });
 
