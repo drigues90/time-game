@@ -1,5 +1,5 @@
-
 /* ==== public/script.js ==== */
+
 const socket = io();
 
 let timer = 0;
@@ -30,13 +30,19 @@ setNameBtn.onclick = () => {
 
 toggleBtn.onclick = () => {
   if (!running && !submitted) {
+    // Jogador está pronto para iniciar
     socket.emit('playerReady');
-    toggleBtn.disabled = true; // desativa botão até início da rodada
-  } else if (running && !submitted) {
+    toggleBtn.disabled = true;
+  } else if (running) {
+    // Jogador para o cronômetro
     clearInterval(interval);
     running = false;
     submitted = true;
     socket.emit('submitTime', timer);
+    toggleBtn.textContent = 'Pronto';
+    toggleBtn.disabled = true;
+  } else if (!running && !submitted) {
+    // Jogador estava esperando para iniciar
     toggleBtn.disabled = true;
   }
 };
@@ -60,10 +66,13 @@ socket.on('startRound', ({ currentRound }) => {
     timerDisplay.textContent = timer.toFixed(2);
   }, 10);
 
-  toggleBtn.disabled = false;
+  timerDisplay.textContent = '0.00';
   result.textContent = '';
   winnerInfo.textContent = '';
   roundInfo.textContent = `Rodada: ${currentRound} / 5`;
+
+  toggleBtn.textContent = 'Parar';
+  toggleBtn.disabled = false;
 });
 
 socket.on('roundResult', ({ winner, winnerName, time, timeLeft, currentRound, players }) => {
@@ -76,6 +85,7 @@ socket.on('roundResult', ({ winner, winnerName, time, timeLeft, currentRound, pl
   roundInfo.textContent = `Rodada: ${currentRound} / 5`;
 
   updateScoreboard(players);
+  toggleBtn.disabled = false;
 });
 
 socket.on('updateScoreboard', (players) => {
@@ -87,6 +97,7 @@ socket.on('gameOver', ({ players }) => {
   winnerInfo.textContent = '';
   roundInfo.textContent = 'Rodadas completas';
   updateScoreboard(players);
+  showFinalStats(fullResults);
 });
 
 function updateScoreboard(players) {
@@ -103,4 +114,22 @@ function updateScoreboard(players) {
 	list.appendChild(item);
   }
   scoreboard.appendChild(list);
+}
+
+function showFinalStats(results) {
+  const container = document.createElement('div');
+  container.innerHTML = `<h3>Resumo Final:</h3>`;
+  for (const id in results) {
+    const player = results[id];
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <strong>${player.name}</strong><br>
+      Rodadas: ${player.rounds.join(', ')}s<br>
+      Tempo total gasto: ${player.totalUsed}s<br>
+      Tempo restante: ${player.timeLeft}s
+      <hr>
+    `;
+    container.appendChild(div);
+  }
+  scoreboard.appendChild(container);
 }

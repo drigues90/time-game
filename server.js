@@ -36,9 +36,33 @@ function allPlayersReady() {
   return Object.values(players).every(p => p.ready);
 }
 
+function getFullResults() {
+  return Object.fromEntries(
+    Object.entries(players).map(([id, p]) => [
+      id,
+      {
+        name: p.name,
+        rounds: p.history.map(t => t.toFixed(2)),
+        totalUsed: p.history.reduce((a, b) => a + b, 0).toFixed(2),
+        timeLeft: p.totalTime.toFixed(2)
+      }
+    ])
+  );
+}
+
 io.on('connection', (socket) => {
   console.log('Novo jogador conectado:', socket.id);
-  players[socket.id] = { time: 0, name: `Jogador ${socket.id.substring(0, 5)}`, submitted: false, victories: 0, totalTime: 300, ready: false };
+  players[socket.id] = { time: 0, name: `Jogador ${socket.id.substring(0, 5)}`, submitted: false, victories: 0, totalTime: 300, ready: false, history: [] };
+
+  // socket.on('playerReady', () => {
+  //   if (players[socket.id]) {
+  //     players[socket.id].ready = true;
+  
+  //     if (Object.values(players).every(p => p.ready && p.totalTime > 0)) {
+  //       startNextRound();
+  //     }
+  //   }
+  // });
 
   io.emit('updateScoreboard', getScoreboard());
 
@@ -54,6 +78,7 @@ io.on('connection', (socket) => {
       players[socket.id].time = elapsedTime;
       players[socket.id].submitted = true;
       players[socket.id].totalTime = Math.max(0, players[socket.id].totalTime - elapsedTime);
+      players[socket.id].history.push(elapsedTime);
 
       if (allPlayersSubmitted()) {
         roundInProgress = false;
@@ -84,18 +109,19 @@ io.on('connection', (socket) => {
 
         if (currentRound > maxRounds || Object.values(players).every(p => p.totalTime <= 0)) {
           io.emit('gameOver', {
-            players: getScoreboard()
+            players: getScoreboard(),
+            fullResults: getFullResults()
           });
         }
       }
     }
   });
 
-  socket.on('nextRound', () => {
-    if (!roundInProgress) {
-      startNextRound();
-    }
-  });
+  // socket.on('nextRound', () => {
+  //   if (!roundInProgress) {
+  //     startNextRound();
+  //   }
+  // });
 
   socket.on('newGame', () => {
     currentRound = 1;
@@ -112,8 +138,10 @@ io.on('connection', (socket) => {
 
   socket.on('playerReady', () => {
     if (players[socket.id]) {
+      console.log('jogador esta pronto:', players[socket.id].name);
       players[socket.id].ready = true;
       if (allPlayersReady()) {
+        console.log('todos os jogadores estao prontos');
         startNextRound();
       }
     }
