@@ -1,6 +1,7 @@
 /* ==== public/script.js ==== */
 
 const socket = io();
+let playerTotalTime = 10; // declare no topo
 
 let timer = 0;
 let startTime = 0;
@@ -59,7 +60,8 @@ newGameBtn.onclick = () => {
   toggleBtn.disabled = false;
 };
 
-socket.on('startRound', ({ currentRound }) => {
+socket.on('startRound', ({ currentRound, totalTime  }) => {
+  playerTotalTime = totalTime;
   timer = 0;
   running = true;
   submitted = false;
@@ -67,7 +69,19 @@ socket.on('startRound', ({ currentRound }) => {
   interval = setInterval(() => {
     timer = (Date.now() - startTime) / 1000;
     timerDisplay.textContent = timer.toFixed(2);
-  }, 10);
+
+    if ((playerTotalTime - timer) <= 0) {
+      clearInterval(interval);
+      running = false;
+      timer = playerTotalTime; // limita o tempo
+      timerDisplay.textContent = timer.toFixed(2);
+      if (!submitted) {
+        submitted = true;
+        socket.emit('submitTime', timer);
+      }
+    }
+  }, 
+  10);
 
   timerDisplay.textContent = '0.00';
   result.textContent = '';
@@ -95,12 +109,11 @@ socket.on('updateScoreboard', (players) => {
   updateScoreboard(players);
 });
 
-socket.on('gameOver', ({ players, fullResults, roundHistory   }) => {
+socket.on('gameOver', ({ players , roundHistory  }) => {
   result.textContent = 'Jogo finalizado!';
   winnerInfo.textContent = '';
   roundInfo.textContent = 'Rodadas completas';
   updateScoreboard(players);
-  showFinalStats(fullResults);
   showFinalResults(roundHistory);
 });
 
@@ -124,9 +137,10 @@ function updateScoreboard(players) {
   for (const id in players) {
     const item = document.createElement('li');
 	if(players[id].name == nameInput.value.trim()){
-		item.textContent = `${players[id].name}: ${players[id].victories} vitória(s), Tempo restante: ${players[id].totalTime}s`;
+		item.textContent = `${players[id].name}:` + `🏆`.repeat(players[id].victories) + 
+    `Tempo restante: ${players[id].totalTime}s`;
 	}else{
-		item.textContent = `${players[id].name}: ${players[id].victories} vitória(s)`;
+		item.textContent = `${players[id].name}:` + `🏆`.repeat(players[id].victories);
 	}
 	
 	list.appendChild(item);
