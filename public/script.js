@@ -7,6 +7,7 @@ let startTime = 0;
 let running = false;
 let interval = null;
 let submitted = false;
+let playerName;
 
 const nameInput = document.getElementById('name');
 const setNameBtn = document.getElementById('setName');
@@ -21,6 +22,7 @@ const scoreboard = document.getElementById('scoreboard');
 
 setNameBtn.onclick = () => {
   const name = nameInput.value.trim();
+  playerName = name;
   if (name) {
     socket.emit('setName', name);
     setNameBtn.disabled = true;
@@ -30,6 +32,7 @@ setNameBtn.onclick = () => {
 
 toggleBtn.onclick = () => {
   if (!running && !submitted) {
+    console.log(playerName, 'esta pronto');
     // Jogador está pronto para iniciar
     socket.emit('playerReady');
     toggleBtn.disabled = true;
@@ -37,7 +40,7 @@ toggleBtn.onclick = () => {
     // Jogador para o cronômetro
     clearInterval(interval);
     running = false;
-    submitted = true;
+    submitted = false;
     socket.emit('submitTime', timer);
     toggleBtn.textContent = 'Pronto';
     toggleBtn.disabled = true;
@@ -92,7 +95,7 @@ socket.on('updateScoreboard', (players) => {
   updateScoreboard(players);
 });
 
-socket.on('gameOver', ({ players }) => {
+socket.on('gameOver', ({ players, fullResults  }) => {
   result.textContent = 'Jogo finalizado!';
   winnerInfo.textContent = '';
   roundInfo.textContent = 'Rodadas completas';
